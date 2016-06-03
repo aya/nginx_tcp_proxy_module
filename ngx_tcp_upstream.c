@@ -7,7 +7,7 @@
 
 static void ngx_tcp_upstream_cleanup(void *data);
 
-static void ngx_tcp_upstream_handler(ngx_event_t *ev); 
+static void ngx_tcp_upstream_handler(ngx_event_t *ev);
 static void ngx_tcp_upstream_connect(ngx_tcp_session_t *s,
     ngx_tcp_upstream_t *u);
 static void ngx_tcp_upstream_resolve_handler(ngx_resolver_ctx_t *ctx);
@@ -130,7 +130,7 @@ ngx_module_t  ngx_tcp_upstream_module = {
 
 
 ngx_int_t
-ngx_tcp_upstream_create(ngx_tcp_session_t *s) 
+ngx_tcp_upstream_create(ngx_tcp_session_t *s)
 {
     ngx_tcp_upstream_t  *u;
 
@@ -272,7 +272,7 @@ found:
 
 
 static void
-ngx_tcp_upstream_resolve_handler(ngx_resolver_ctx_t *ctx) 
+ngx_tcp_upstream_resolve_handler(ngx_resolver_ctx_t *ctx)
 {
     ngx_tcp_session_t            *s;
     ngx_tcp_upstream_resolved_t  *ur;
@@ -294,7 +294,10 @@ ngx_tcp_upstream_resolve_handler(ngx_resolver_ctx_t *ctx)
 
     ur = s->upstream->resolved;
     ur->naddrs = ctx->naddrs;
-    ur->addrs = ctx->addrs;
+    // fixture for 'assignment from incompatible pointer type'
+    ur->addrs->sockaddr = ctx->addrs->sockaddr;
+    ur->addrs->socklen = ctx->addrs->socklen;
+    ur->addrs->name = ctx->addrs->name;
 
 #if (NGX_DEBUG)
     {
@@ -342,7 +345,7 @@ ngx_tcp_upstream_resolve_handler(ngx_resolver_ctx_t *ctx)
 
 
 static void
-ngx_tcp_upstream_connect(ngx_tcp_session_t *s, ngx_tcp_upstream_t *u) 
+ngx_tcp_upstream_connect(ngx_tcp_session_t *s, ngx_tcp_upstream_t *u)
 {
     int                       tcp_nodelay;
     ngx_int_t                 rc;
@@ -360,7 +363,7 @@ ngx_tcp_upstream_connect(ngx_tcp_session_t *s, ngx_tcp_upstream_t *u)
 
     if (rc != NGX_OK && rc != NGX_AGAIN) {
 
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, 
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
                       "upstream servers are busy or encounter error!");
 
         /* TODO: check this function */
@@ -415,7 +418,7 @@ ngx_tcp_upstream_connect(ngx_tcp_session_t *s, ngx_tcp_upstream_t *u)
 
 
 static void
-ngx_tcp_upstream_handler(ngx_event_t *ev) 
+ngx_tcp_upstream_handler(ngx_event_t *ev)
 {
     ngx_connection_t     *c;
     ngx_tcp_session_t    *s;
@@ -441,8 +444,8 @@ ngx_tcp_upstream_handler(ngx_event_t *ev)
 }
 
 
-ngx_int_t 
-ngx_tcp_upstream_check_broken_connection(ngx_tcp_session_t *s) 
+ngx_int_t
+ngx_tcp_upstream_check_broken_connection(ngx_tcp_session_t *s)
 {
     int                  n;
     char                 buf[1];
@@ -479,7 +482,7 @@ ngx_tcp_upstream_check_broken_connection(ngx_tcp_session_t *s)
 
 void
 ngx_tcp_upstream_next(ngx_tcp_session_t *s, ngx_tcp_upstream_t *u,
-    ngx_uint_t ft_type) 
+    ngx_uint_t ft_type)
 {
     ngx_log_debug1(NGX_LOG_DEBUG_TCP, s->connection->log, 0,
                    "tcp next upstream, fail_type: %xi", ft_type);
@@ -516,7 +519,7 @@ ngx_tcp_upstream_next(ngx_tcp_session_t *s, ngx_tcp_upstream_t *u,
             (void) ngx_ssl_shutdown(u->peer.connection);
         }
 #endif
-        
+
         if (u->peer.check_index != NGX_INVALID_CHECK_INDEX) {
             ngx_tcp_check_free_peer(u->peer.check_index);
             u->peer.check_index = NGX_INVALID_CHECK_INDEX;
@@ -530,7 +533,7 @@ ngx_tcp_upstream_next(ngx_tcp_session_t *s, ngx_tcp_upstream_t *u,
 
 
 static void
-ngx_tcp_upstream_cleanup(void *data) 
+ngx_tcp_upstream_cleanup(void *data)
 {
     ngx_tcp_session_t *s = data;
 
@@ -551,7 +554,7 @@ ngx_tcp_upstream_cleanup(void *data)
 
 static void
 ngx_tcp_upstream_finalize_session(ngx_tcp_session_t *s,
-    ngx_tcp_upstream_t *u, ngx_int_t rc) 
+    ngx_tcp_upstream_t *u, ngx_int_t rc)
 {
     ngx_time_t  *tp;
 
@@ -600,7 +603,7 @@ ngx_tcp_upstream_finalize_session(ngx_tcp_session_t *s,
 
 
 ngx_tcp_upstream_srv_conf_t *
-ngx_tcp_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags) 
+ngx_tcp_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 {
     ngx_uint_t                     i;
     ngx_tcp_upstream_server_t     *us;
@@ -625,7 +628,7 @@ ngx_tcp_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
-        if (uscfp[i]->host.len != u->host.len || 
+        if (uscfp[i]->host.len != u->host.len ||
                 ngx_strncasecmp(uscfp[i]->host.data,
                                 u->host.data, u->host.len) != 0)
         {
@@ -726,7 +729,7 @@ ngx_tcp_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 
 
 static char *
-ngx_tcp_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy) 
+ngx_tcp_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
     char                          *rv;
     void                          *mconf;
@@ -745,7 +748,7 @@ ngx_tcp_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     u.no_resolve = 1;
     u.no_port = 1;
 
-    uscf = ngx_tcp_upstream_add(cf, &u, 
+    uscf = ngx_tcp_upstream_add(cf, &u,
                                 NGX_TCP_UPSTREAM_CREATE
                                |NGX_TCP_UPSTREAM_WEIGHT
                                |NGX_TCP_UPSTREAM_MAX_FAILS
@@ -820,7 +823,7 @@ ngx_tcp_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
 
 static char *
-ngx_tcp_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf) 
+ngx_tcp_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_tcp_upstream_srv_conf_t  *uscf = conf;
 
@@ -976,7 +979,7 @@ invalid:
 
 
 static char *
-ngx_tcp_upstream_check(ngx_conf_t *cf, ngx_command_t *cmd, void *conf) 
+ngx_tcp_upstream_check(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_tcp_upstream_srv_conf_t  *uscf = conf;
 
@@ -1082,7 +1085,7 @@ invalid_check_parameter:
 
 
 static void *
-ngx_tcp_upstream_create_main_conf(ngx_conf_t *cf) 
+ngx_tcp_upstream_create_main_conf(ngx_conf_t *cf)
 {
     ngx_tcp_upstream_main_conf_t  *umcf;
 
@@ -1114,7 +1117,7 @@ ngx_tcp_upstream_create_main_conf(ngx_conf_t *cf)
 
 
 static char *
-ngx_tcp_upstream_init_main_conf(ngx_conf_t *cf, void *conf) 
+ngx_tcp_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
 {
     ngx_tcp_upstream_main_conf_t   *umcf = conf;
 
